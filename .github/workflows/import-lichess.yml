@@ -7,6 +7,9 @@ on:
         description: "Ссылка на партию Lichess"
         required: true
         type: string
+  push:
+    paths:
+      - "requests/*.txt"
 
 permissions:
   contents: write
@@ -17,15 +20,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Скачать PGN
-        run: python scripts/import_lichess_game.py "${{ inputs.game_url }}"
+        env:
+          GAME_URL: ${{ inputs.game_url }}
+        run: |
+          if [ -n "$GAME_URL" ]; then
+            python scripts/import_lichess_game.py "$GAME_URL"
+          else
+            python scripts/import_lichess_game.py
+          fi
       - name: Сохранить партию
         run: |
-          if git diff --quiet; then
+          git add games/
+          if git diff --cached --quiet; then
             echo "Изменений нет"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add games/
           git commit -m "Import Lichess game"
           git push

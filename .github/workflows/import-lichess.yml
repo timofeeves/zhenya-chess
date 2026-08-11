@@ -1,0 +1,31 @@
+name: Import Lichess game
+
+on:
+  workflow_dispatch:
+    inputs:
+      game_url:
+        description: "Ссылка на партию Lichess"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Скачать PGN
+        run: python scripts/import_lichess_game.py "${{ inputs.game_url }}"
+      - name: Сохранить партию
+        run: |
+          if git diff --quiet; then
+            echo "Изменений нет"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/
+          git commit -m "Import Lichess game"
+          git push
